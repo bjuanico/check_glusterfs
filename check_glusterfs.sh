@@ -113,12 +113,11 @@ while read -r line; do
 			if [ "$unit" != "GB" ] && [ "$unit" != "TB" ]; then
 				Exit UNKNOWN "unknown disk space size $freeunit"
 			fi
+			total=$(echo "${total} + ${free}" | bc -q)
 			if [ "$unit" = "TB" ]; then
 				free=$(echo "${free} * 1024" | bc -q)
 			fi
-			total=$(echo "${total} + ${free}" | bc -q)
 			free=$(echo "${free} / 1" | bc -q)
-			
 		fi
 		;;
 	Online)
@@ -152,9 +151,14 @@ while read -r line; do
 	esac
 done < <(sudo gluster volume info ${VOLUME} )
 
-total=$(echo "${total} / ${replica}" | bc -q)
-freeunit=$total$unit
+total=$(echo "${total} / ${BRICKS} * ${replica}" | bc -q)
 free=$(echo "${total} / 1" | bc -q)
+
+if [ "$unit" = "TB" ]; then
+	free=$(echo "${free} * 1024" | bc -q)
+fi
+
+freeunit=$total$unit
 
 
 if [ $bricksfound -eq 0 ]; then
